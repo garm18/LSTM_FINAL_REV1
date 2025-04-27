@@ -13,7 +13,7 @@ MODEL_PATH = os.path.join(ARTIFACT_DIR, 'lstm_rssi_model.h5')
 SCALER_PATH = os.path.join(ARTIFACT_DIR, 'scaler.pkl')
 TEST_DATA_PATH = os.path.join(ARTIFACT_DIR, 'test_data.pkl')
 
-# 🔹 Endpoint Health Check
+# 🔹 Health Check
 @app.route('/health', methods=['GET'])
 def health_check():
     model_exists = os.path.exists(MODEL_PATH)
@@ -24,7 +24,7 @@ def health_check():
         'scaler_found': scaler_exists
     })
 
-# 🔹 Endpoint Pelatihan Ulang Model
+# 🔹 Train Model
 @app.route('/train-lstm', methods=['GET'])
 def train_lstm():
     try:
@@ -34,7 +34,7 @@ def train_lstm():
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
-# 🔹 Endpoint Prediksi dari Model
+# 🔹 Predict Model
 @app.route('/predict-rssi', methods=['GET'])
 def predict_rssi():
     try:
@@ -65,6 +65,26 @@ def predict_rssi():
             })
 
         return jsonify({'data': results})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+# 🔹 Forecast RSSI (forward prediction)
+@app.route('/forecast-rssi', methods=['GET'])
+def forecast_rssi():
+    try:
+        from forecast_rssi import forecast_next_minutes
+
+        minutes = int(request.args.get('minutes', 30))  # default = 30
+        forecast_df = forecast_next_minutes(minutes=minutes)
+
+        forecast_data = []
+        for _, row in forecast_df.iterrows():
+            forecast_data.append({
+                'timestamp': row['timestamp'],
+                'forecasted_rssi': row['forecasted_rssi']
+            })
+
+        return jsonify({'forecast': forecast_data})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
 
